@@ -80,6 +80,12 @@
   .ket-qua.loi .tieu-de{ color: var(--do-canh-bao); }
   .ket-qua .mo-ta{ font-size:13.5px; color: var(--chu-nhat); line-height:1.5; }
   .ghi-chu-cuoi{ margin-top: 26px; font-size: 12px; color: var(--chu-nhat); text-align:center; line-height:1.6; }
+  .canh-bao-loi{
+    margin-top:14px; padding:10px 12px; font-size:11.5px; color:#8a6d1f;
+    background:#fff8e6; border:1px solid #f0d999; border-radius:8px;
+    display:none; word-break:break-all;
+  }
+  .canh-bao-loi.hien{ display:block; }
 </style>
 </head>
 <body>
@@ -98,6 +104,7 @@
     <select id="oDonVi">
       <option value="">— Đang tải danh sách... —</option>
     </select>
+    <div class="canh-bao-loi" id="oLoiDonVi"></div>
 
     <div class="buoc-nhan" style="margin-top:16px;">Chức vụ</div>
     <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Thường trực Hội đồng Đội">
@@ -123,28 +130,25 @@
 
 <script>
   // ============================================================
-  // "https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec"
+  // DÁN LINK WEB APP CỦA APPS SCRIPT VÀO ĐÂY (kết thúc bằng /exec)
   // ============================================================
   const EXEC_URL = "DÁN_LINK_WEB_APP_CỦA_CHỊ_VÀO_ĐÂY";
 
-  // Gọi Apps Script bằng kỹ thuật JSONP (không qua iframe, tương thích cao)
-  function goiJSONP(thamSo, tenCallback, xuLy){
-    window[tenCallback] = function(ketQua){
-      xuLy(ketQua);
-      delete window[tenCallback];
-      document.body.removeChild(scriptTag);
-    };
-    const scriptTag = document.createElement('script');
-    let url = EXEC_URL + "?callback=" + tenCallback;
+  function goiApi(thamSo){
+    let url = EXEC_URL + "?";
+    const phanTu = [];
     for(const k in thamSo){
-      url += "&" + k + "=" + encodeURIComponent(thamSo[k]);
+      phanTu.push(k + "=" + encodeURIComponent(thamSo[k]));
     }
-    scriptTag.src = url;
-    document.body.appendChild(scriptTag);
+    url += phanTu.join("&");
+    return fetch(url).then(function(res){
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    });
   }
 
   // Tải danh sách đơn vị khi mở trang
-  goiJSONP({ action: "donvi" }, "xuLyDanhSachDonVi", function(danhSach){
+  goiApi({ action: "donvi" }).then(function(danhSach){
     const select = document.getElementById('oDonVi');
     select.innerHTML = '<option value="">— Chọn đơn vị —</option>';
     danhSach.forEach(function(ten){
@@ -153,6 +157,11 @@
       opt.textContent = ten;
       select.appendChild(opt);
     });
+  }).catch(function(loi){
+    document.getElementById('oDonVi').innerHTML = '<option value="">— Không tải được danh sách —</option>';
+    const canhBao = document.getElementById('oLoiDonVi');
+    canhBao.textContent = 'Chi tiết lỗi (gửi ảnh chụp dòng này cho người hỗ trợ): ' + loi.message;
+    canhBao.classList.add('hien');
   });
 
   function chayDiemDanh(){
@@ -185,14 +194,14 @@
       chu.textContent = 'Đã xác thực vị trí (độ chính xác ~' + Math.round(viTri.coords.accuracy) + 'm)';
       nut.textContent = 'Đang gửi điểm danh...';
 
-      goiJSONP({
+      goiApi({
         action: "diemdanh",
         hoTen: hoTen,
         donVi: donVi,
         chucVu: chucVu,
         viDo: viTri.coords.latitude,
         kinhDo: viTri.coords.longitude
-      }, "xuLyKetQuaDiemDanh", function(ketQua){
+      }).then(function(ketQua){
         nut.disabled = false;
         nut.textContent = 'Điểm danh ngay';
         if(ketQua.ketQua === 'thanhcong'){
@@ -203,6 +212,10 @@
         } else {
           hienKetQua(false, 'Không thể điểm danh', ketQua.thongDiep);
         }
+      }).catch(function(loi){
+        nut.disabled = false;
+        nut.textContent = 'Điểm danh ngay';
+        hienKetQua(false, 'Lỗi hệ thống', 'Không kết nối được máy chủ: ' + loi.message);
       });
 
     }, function(loi){

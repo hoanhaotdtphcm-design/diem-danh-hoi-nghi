@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Điểm danh Hội nghị</title>
+<style>
+  :root{
+    --xanh-doan: #1a4d8f;
+    --do-doan: #c23b3b;
+    --nen: #f6f7f9;
+    --chu: #1c2430;
+    --chu-nhat: #667085;
+    --vien: #dfe3ea;
+    --xanh-la: #1e8f5f;
+    --do-canh-bao: #c23b3b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--nen);
+    color: var(--chu);
+    display:flex;
+    justify-content:center;
+    min-height:100vh;
+  }
+  .khung{
+    width:100%;
+    max-width: 460px;
+    min-height:100vh;
+    background: #fff;
+    display:flex;
+    flex-direction:column;
+  }
+  .dai{
+    background: linear-gradient(135deg, var(--do-doan) 0%, #a02f2f 100%);
+    color:#fff;
+    padding: 28px 24px 22px;
+    text-align:center;
+  }
+  .dai .nhan{ font-size:12px; opacity:0.85; margin-bottom:6px; }
+  .dai h1{ font-size:19px; margin:0 0 4px; font-weight:700; line-height:1.35; }
+  .noidung{ flex:1; padding: 22px 22px 30px; }
+  .buoc-nhan{ font-size:13px; color: var(--chu-nhat); margin-bottom: 8px; font-weight:600; }
+  select, input[type="text"]{
+    width:100%; padding: 14px; font-size:15px; border-radius:10px;
+    border: 1.5px solid var(--vien); background:#fff; color: var(--chu);
+    font-family: inherit;
+  }
+  select{
+    appearance:none; -webkit-appearance:none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='9'%3E%3Cpath d='M1 1l6 6 6-6' stroke='%23667085' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position: right 16px center;
+  }
+  select:focus, input[type="text"]:focus{ outline: none; border-color: var(--xanh-doan); }
+  input[type="text"]::placeholder{ color: #a5acb8; }
+  .trang-thai-vitri{
+    margin-top: 18px; padding: 13px 15px; border-radius: 10px; font-size: 13.5px;
+    display:flex; align-items:center; gap:10px; background: #fafafa;
+    border: 1.5px solid var(--vien); color: var(--chu-nhat);
+  }
+  .cham{ width:8px; height:8px; border-radius:50%; background: #c4c9d1; flex-shrink:0; }
+  .cham.dang-do{ background: #e8b339; }
+  .cham.thanh-cong{ background: var(--xanh-la); }
+  .cham.loi{ background: var(--do-canh-bao); }
+  .nut{
+    width:100%; margin-top: 24px; padding: 15px; border-radius: 12px; border:none;
+    background: var(--xanh-doan); color:#fff; font-size:15.5px; font-weight:700; cursor:pointer;
+  }
+  .nut:disabled{ background:#b7c3d4; cursor:not-allowed; }
+  .ket-qua{ margin-top: 22px; padding: 18px; border-radius: 12px; text-align:center; display:none; }
+  .ket-qua.hien{ display:block; }
+  .ket-qua.thanh-cong{ background: #eaf7f0; border: 1.5px solid #b7e4cb; }
+  .ket-qua.loi{ background: #fbecec; border: 1.5px solid #f0c0c0; }
+  .ket-qua .bieu-tuong{ font-size: 30px; margin-bottom: 8px; }
+  .ket-qua .tieu-de{ font-size:15.5px; font-weight:700; margin-bottom:4px; }
+  .ket-qua.thanh-cong .tieu-de{ color: var(--xanh-la); }
+  .ket-qua.loi .tieu-de{ color: var(--do-canh-bao); }
+  .ket-qua .mo-ta{ font-size:13.5px; color: var(--chu-nhat); line-height:1.5; }
+  .ghi-chu-cuoi{ margin-top: 26px; font-size: 12px; color: var(--chu-nhat); text-align:center; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="khung">
+  <div class="dai">
+    <div class="nhan">HỘI ĐỒNG ĐỘI THÀNH PHỐ HỒ CHÍ MINH</div>
+    <h1>Điểm danh Hội nghị</h1>
+  </div>
+
+  <div class="noidung">
+    <div class="buoc-nhan">Họ và tên</div>
+    <input type="text" id="oHoTen" placeholder="Nhập họ và tên đầy đủ">
+
+    <div class="buoc-nhan" style="margin-top:16px;">Đơn vị</div>
+    <select id="oDonVi">
+      <option value="">— Đang tải danh sách... —</option>
+    </select>
+
+    <div class="buoc-nhan" style="margin-top:16px;">Chức vụ</div>
+    <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Thường trực Hội đồng Đội">
+
+    <div class="trang-thai-vitri" id="trangThaiViTri">
+      <div class="cham" id="chamViTri"></div>
+      <span id="chuViTri">Chưa xác thực vị trí</span>
+    </div>
+
+    <button class="nut" id="nutDiemDanh" onclick="chayDiemDanh()">Điểm danh ngay</button>
+
+    <div class="ket-qua" id="oKetQua">
+      <div class="bieu-tuong" id="bieuTuongKQ"></div>
+      <div class="tieu-de" id="tieuDeKQ"></div>
+      <div class="mo-ta" id="moTaKQ"></div>
+    </div>
+
+    <div class="ghi-chu-cuoi">
+      Vị trí chỉ dùng để xác nhận có mặt tại hội nghị,<br>không lưu trữ cho mục đích khác.
+    </div>
+  </div>
+</div>
+
+<script>
+  // ============================================================
+  // "https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec"
+  // ============================================================
+  const EXEC_URL = "DÁN_LINK_WEB_APP_CỦA_CHỊ_VÀO_ĐÂY";
+
+  // Gọi Apps Script bằng kỹ thuật JSONP (không qua iframe, tương thích cao)
+  function goiJSONP(thamSo, tenCallback, xuLy){
+    window[tenCallback] = function(ketQua){
+      xuLy(ketQua);
+      delete window[tenCallback];
+      document.body.removeChild(scriptTag);
+    };
+    const scriptTag = document.createElement('script');
+    let url = EXEC_URL + "?callback=" + tenCallback;
+    for(const k in thamSo){
+      url += "&" + k + "=" + encodeURIComponent(thamSo[k]);
+    }
+    scriptTag.src = url;
+    document.body.appendChild(scriptTag);
+  }
+
+  // Tải danh sách đơn vị khi mở trang
+  goiJSONP({ action: "donvi" }, "xuLyDanhSachDonVi", function(danhSach){
+    const select = document.getElementById('oDonVi');
+    select.innerHTML = '<option value="">— Chọn đơn vị —</option>';
+    danhSach.forEach(function(ten){
+      const opt = document.createElement('option');
+      opt.value = ten;
+      opt.textContent = ten;
+      select.appendChild(opt);
+    });
+  });
+
+  function chayDiemDanh(){
+    const hoTen = document.getElementById('oHoTen').value.trim();
+    const donVi = document.getElementById('oDonVi').value.trim();
+    const chucVu = document.getElementById('oChucVu').value.trim();
+    const nut = document.getElementById('nutDiemDanh');
+    const cham = document.getElementById('chamViTri');
+    const chu = document.getElementById('chuViTri');
+    const oKQ = document.getElementById('oKetQua');
+
+    if(!hoTen || !donVi || !chucVu){
+      alert('Vui lòng điền đầy đủ Họ tên, Đơn vị và Chức vụ.');
+      return;
+    }
+
+    nut.disabled = true;
+    nut.textContent = 'Đang xác thực vị trí...';
+    cham.className = 'cham dang-do';
+    chu.textContent = 'Đang lấy vị trí thiết bị...';
+    oKQ.className = 'ket-qua';
+
+    if(!navigator.geolocation){
+      baoLoi('Thiết bị không hỗ trợ định vị.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(function(viTri){
+      cham.className = 'cham thanh-cong';
+      chu.textContent = 'Đã xác thực vị trí (độ chính xác ~' + Math.round(viTri.coords.accuracy) + 'm)';
+      nut.textContent = 'Đang gửi điểm danh...';
+
+      goiJSONP({
+        action: "diemdanh",
+        hoTen: hoTen,
+        donVi: donVi,
+        chucVu: chucVu,
+        viDo: viTri.coords.latitude,
+        kinhDo: viTri.coords.longitude
+      }, "xuLyKetQuaDiemDanh", function(ketQua){
+        nut.disabled = false;
+        nut.textContent = 'Điểm danh ngay';
+        if(ketQua.ketQua === 'thanhcong'){
+          hienKetQua(true, 'Điểm danh thành công', ketQua.hoTen + ' đã được ghi nhận lúc ' + ketQua.gio + '.');
+          document.getElementById('oHoTen').value = '';
+          document.getElementById('oDonVi').value = '';
+          document.getElementById('oChucVu').value = '';
+        } else {
+          hienKetQua(false, 'Không thể điểm danh', ketQua.thongDiep);
+        }
+      });
+
+    }, function(loi){
+      let td = 'Không thể lấy vị trí thiết bị.';
+      if(loi.code === 1) td = 'Bạn chưa cấp quyền truy cập vị trí. Vui lòng bật định vị và thử lại.';
+      baoLoi(td);
+    }, { enableHighAccuracy: true, timeout: 10000 });
+  }
+
+  function baoLoi(thongDiep){
+    document.getElementById('chamViTri').className = 'cham loi';
+    document.getElementById('chuViTri').textContent = thongDiep;
+    const nut = document.getElementById('nutDiemDanh');
+    nut.disabled = false;
+    nut.textContent = 'Điểm danh ngay';
+  }
+
+  function hienKetQua(thanhCong, tieuDe, moTa){
+    const oKQ = document.getElementById('oKetQua');
+    oKQ.className = 'ket-qua hien ' + (thanhCong ? 'thanh-cong' : 'loi');
+    document.getElementById('bieuTuongKQ').textContent = thanhCong ? '✓' : '⚠';
+    document.getElementById('tieuDeKQ').textContent = tieuDe;
+    document.getElementById('moTaKQ').textContent = moTa;
+  }
+</script>
+
+</body>
+</html>

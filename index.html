@@ -109,6 +109,9 @@
     <div class="buoc-nhan" style="margin-top:16px;">Chức vụ</div>
     <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Chủ tịch Hội đồng Đội">
 
+    <div class="buoc-nhan" style="margin-top:16px;">Số điện thoại</div>
+    <input type="text" id="oSoDienThoai" placeholder="VD: 0912345678" inputmode="tel">
+
     <div class="trang-thai-vitri" id="trangThaiViTri">
       <div class="cham" id="chamViTri"></div>
       <span id="chuViTri">Chưa xác thực vị trí</span>
@@ -130,7 +133,7 @@
 
 <script>
   // ============================================================
-  // "https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec"
+  //"https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec"
   // ============================================================
   const EXEC_URL = "https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec";
 
@@ -168,13 +171,14 @@
     const hoTen = document.getElementById('oHoTen').value.trim();
     const donVi = document.getElementById('oDonVi').value.trim();
     const chucVu = document.getElementById('oChucVu').value.trim();
+    const soDienThoai = document.getElementById('oSoDienThoai').value.trim();
     const nut = document.getElementById('nutDiemDanh');
     const cham = document.getElementById('chamViTri');
     const chu = document.getElementById('chuViTri');
     const oKQ = document.getElementById('oKetQua');
 
-    if(!hoTen || !donVi || !chucVu){
-      alert('Vui lòng điền đầy đủ Họ tên, Đơn vị và Chức vụ.');
+    if(!hoTen || !donVi || !chucVu || !soDienThoai){
+      alert('Vui lòng điền đầy đủ Họ tên, Đơn vị, Chức vụ và Số điện thoại.');
       return;
     }
 
@@ -199,6 +203,7 @@
         hoTen: hoTen,
         donVi: donVi,
         chucVu: chucVu,
+        soDienThoai: soDienThoai,
         viDo: viTri.coords.latitude,
         kinhDo: viTri.coords.longitude
       }).then(function(ketQua){
@@ -209,6 +214,7 @@
           document.getElementById('oHoTen').value = '';
           document.getElementById('oDonVi').value = '';
           document.getElementById('oChucVu').value = '';
+          document.getElementById('oSoDienThoai').value = '';
         } else {
           hienKetQua(false, 'Không thể điểm danh', ketQua.thongDiep);
         }

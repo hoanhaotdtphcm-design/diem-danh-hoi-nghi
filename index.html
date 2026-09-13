@@ -56,6 +56,27 @@
   }
   select:focus, input[type="text"]:focus{ outline: none; border-color: var(--xanh-doan); }
   input[type="text"]::placeholder{ color: #a5acb8; }
+
+  .nut-anh{
+    width:100%; padding: 14px; border-radius: 10px;
+    border: 1.5px dashed var(--vien); background:#fafbfc; color: var(--chu-nhat);
+    font-size:14px; text-align:center; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .nut-anh:active{ background:#f0f2f5; }
+  input[type="file"]{ display:none; }
+  .xem-truoc-anh{
+    margin-top:12px; display:none; position:relative;
+    border-radius:10px; overflow:hidden; border: 1.5px solid var(--vien);
+  }
+  .xem-truoc-anh.hien{ display:block; }
+  .xem-truoc-anh img{ width:100%; display:block; max-height:220px; object-fit:cover; }
+  .xoa-anh{
+    position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.55);
+    color:#fff; border:none; border-radius:50%; width:28px; height:28px;
+    font-size:15px; cursor:pointer; line-height:1;
+  }
+
   .trang-thai-vitri{
     margin-top: 18px; padding: 13px 15px; border-radius: 10px; font-size: 13.5px;
     display:flex; align-items:center; gap:10px; background: #fafafa;
@@ -107,10 +128,20 @@
     <div class="canh-bao-loi" id="oLoiDonVi"></div>
 
     <div class="buoc-nhan" style="margin-top:16px;">Chức vụ</div>
-    <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Chủ tịch Hội đồng Đội">
+    <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Thường trực Hội đồng Đội">
 
     <div class="buoc-nhan" style="margin-top:16px;">Số điện thoại</div>
     <input type="text" id="oSoDienThoai" placeholder="VD: 0912345678" inputmode="tel">
+
+    <div class="buoc-nhan" style="margin-top:16px;">Ảnh selfie (bắt buộc — chụp thấy rõ không gian xung quanh)</div>
+    <label class="nut-anh" for="oChonAnh">
+      <span>🤳</span><span>Chụp ảnh selfie ngay bây giờ</span>
+    </label>
+    <input type="file" id="oChonAnh" accept="image/*" capture="user">
+    <div class="xem-truoc-anh" id="oXemTruocAnh">
+      <img id="oAnhXemTruoc" src="">
+      <button class="xoa-anh" onclick="xoaAnhDaChon()" type="button">✕</button>
+    </div>
 
     <div class="trang-thai-vitri" id="trangThaiViTri">
       <div class="cham" id="chamViTri"></div>
@@ -133,11 +164,57 @@
 
 <script>
   // ============================================================
-  //"https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec"
+  // "https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec"
   // ============================================================
   const EXEC_URL = "https://script.google.com/macros/s/AKfycbwcPeAAuqxwTjrcO7TOTtIgeUHvMD417Frm8qBFm2IDbdbIOv5hj0ymLX5fZyVsYdCa/exec";
 
-  function goiApi(thamSo){
+  let anhDaChonBase64 = null; // ảnh đã nén, dạng base64 (không kèm tiền tố data:)
+
+  // ---------- Xử lý chọn / nén / xem trước ảnh ----------
+  document.getElementById('oChonAnh').addEventListener('change', function(ev){
+    const file = ev.target.files[0];
+    if(!file) return;
+    nenAnh(file, 1000, 0.7).then(function(dataUrl){
+      anhDaChonBase64 = dataUrl.split(',')[1];
+      document.getElementById('oAnhXemTruoc').src = dataUrl;
+      document.getElementById('oXemTruocAnh').classList.add('hien');
+    }).catch(function(){
+      alert('Không thể xử lý ảnh này, vui lòng thử ảnh khác.');
+    });
+  });
+
+  function xoaAnhDaChon(){
+    anhDaChonBase64 = null;
+    document.getElementById('oChonAnh').value = '';
+    document.getElementById('oXemTruocAnh').classList.remove('hien');
+  }
+
+  function nenAnh(file, chieuRongToiDa, chatLuong){
+    return new Promise(function(resolve, reject){
+      const reader = new FileReader();
+      reader.onload = function(e){
+        const img = new Image();
+        img.onload = function(){
+          let w = img.width, h = img.height;
+          if (w > chieuRongToiDa) {
+            h = Math.round(h * chieuRongToiDa / w);
+            w = chieuRongToiDa;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', chatLuong));
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- Gọi API ----------
+  function goiApiGet(thamSo){
     let url = EXEC_URL + "?";
     const phanTu = [];
     for(const k in thamSo){
@@ -150,8 +227,19 @@
     });
   }
 
+  function goiApiPost(duLieu){
+    // Gửi dạng text/plain (mặc định của fetch khi body là chuỗi) để tránh preflight CORS
+    return fetch(EXEC_URL, {
+      method: "POST",
+      body: JSON.stringify(duLieu)
+    }).then(function(res){
+      if(!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    });
+  }
+
   // Tải danh sách đơn vị khi mở trang
-  goiApi({ action: "donvi" }).then(function(danhSach){
+  goiApiGet({ action: "donvi" }).then(function(danhSach){
     const select = document.getElementById('oDonVi');
     select.innerHTML = '<option value="">— Chọn đơn vị —</option>';
     danhSach.forEach(function(ten){
@@ -181,6 +269,10 @@
       alert('Vui lòng điền đầy đủ Họ tên, Đơn vị, Chức vụ và Số điện thoại.');
       return;
     }
+    if(!anhDaChonBase64){
+      alert('Vui lòng chụp ảnh selfie (thấy rõ không gian xung quanh) trước khi điểm danh.');
+      return;
+    }
 
     nut.disabled = true;
     nut.textContent = 'Đang xác thực vị trí...';
@@ -196,17 +288,23 @@
     navigator.geolocation.getCurrentPosition(function(viTri){
       cham.className = 'cham thanh-cong';
       chu.textContent = 'Đã xác thực vị trí (độ chính xác ~' + Math.round(viTri.coords.accuracy) + 'm)';
-      nut.textContent = 'Đang gửi điểm danh...';
+      nut.textContent = anhDaChonBase64 ? 'Đang tải ảnh và gửi điểm danh...' : 'Đang gửi điểm danh...';
 
-      goiApi({
-        action: "diemdanh",
+      const goiTin = {
         hoTen: hoTen,
         donVi: donVi,
         chucVu: chucVu,
         soDienThoai: soDienThoai,
         viDo: viTri.coords.latitude,
         kinhDo: viTri.coords.longitude
-      }).then(function(ketQua){
+      };
+      if(anhDaChonBase64){
+        goiTin.anhBase64 = anhDaChonBase64;
+        goiTin.anhTen = hoTen.replace(/\s+/g,'_') + '_' + Date.now() + '.jpg';
+        goiTin.anhMime = 'image/jpeg';
+      }
+
+      goiApiPost(goiTin).then(function(ketQua){
         nut.disabled = false;
         nut.textContent = 'Điểm danh ngay';
         if(ketQua.ketQua === 'thanhcong'){
@@ -215,6 +313,7 @@
           document.getElementById('oDonVi').value = '';
           document.getElementById('oChucVu').value = '';
           document.getElementById('oSoDienThoai').value = '';
+          xoaAnhDaChon();
         } else {
           hienKetQua(false, 'Không thể điểm danh', ketQua.thongDiep);
         }

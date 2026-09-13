@@ -128,7 +128,7 @@
     <div class="canh-bao-loi" id="oLoiDonVi"></div>
 
     <div class="buoc-nhan" style="margin-top:16px;">Chức vụ</div>
-    <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Thường trực Hội đồng Đội">
+    <input type="text" id="oChucVu" placeholder="VD: Phụ trách Đội / Chủ tịch Hội đồng Đội">
 
     <div class="buoc-nhan" style="margin-top:16px;">Số điện thoại</div>
     <input type="text" id="oSoDienThoai" placeholder="VD: 0912345678" inputmode="tel">
@@ -228,13 +228,24 @@
   }
 
   function goiApiPost(duLieu){
-    // Gửi dạng text/plain (mặc định của fetch khi body là chuỗi) để tránh preflight CORS
-    return fetch(EXEC_URL, {
-      method: "POST",
-      body: JSON.stringify(duLieu)
-    }).then(function(res){
-      if(!res.ok) throw new Error("HTTP " + res.status);
-      return res.json();
+    // Dùng XMLHttpRequest thay vì fetch() vì fetch POST tới Apps Script
+    // bị chuyển hướng nội bộ và tự đổi thành GET, làm mất toàn bộ dữ liệu gửi kèm (kể cả ảnh)
+    return new Promise(function(resolve, reject){
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', EXEC_URL, true);
+      xhr.onload = function(){
+        if(xhr.status === 200){
+          try{
+            resolve(JSON.parse(xhr.responseText));
+          } catch(loi){
+            reject(new Error('Không đọc được phản hồi từ máy chủ.'));
+          }
+        } else {
+          reject(new Error('HTTP ' + xhr.status));
+        }
+      };
+      xhr.onerror = function(){ reject(new Error('Lỗi kết nối mạng.')); };
+      xhr.send(JSON.stringify(duLieu));
     });
   }
 
